@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Balance Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .examples {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .examples a {
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .examples a:hover {
+            text-decoration: underline;
+        }
+
+        .results {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .summary-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .chain-section {
+            margin-bottom: 30px;
+        }
+
+        .chain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .chain-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .chain-total {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .token-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .token-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .token-item:hover {
+            background: #f0f0f0;
+        }
+
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .token-symbol {
+            font-weight: 700;
+            color: #333;
+            min-width: 60px;
+        }
+
+        .token-balance {
+            color: #666;
+        }
+
+        .token-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Wallet Balance Tracker</h1>
+            <p class="subtitle">Track cryptocurrency wallet balances across Ethereum, Polygon, and Arbitrum</p>
+        </header>
+
+        <div class="search-box">
+            <div class="input-group">
+                <input
+                    type="text"
+                    id="addressInput"
+                    placeholder="Enter Ethereum wallet address (0x...)"
+                    value=""
+                />
+                <button onclick="fetchPortfolio()">Check Balance</button>
+            </div>
+            <div class="examples">
+                Example:
+                <a onclick="setExample('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')">Vitalik's Address</a>
+            </div>
+        </div>
+
+        <div id="results" class="results">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        function setExample(address) {
+            document.getElementById('addressInput').value = address;
+        }
+
+        function showLoading() {
+            const results = document.getElementById('results');
+            results.className = 'results show';
+            results.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Fetching wallet balances...</p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const results = document.getElementById('results');
+            results.className = 'results show';
+            results.innerHTML = `
+                <div class="error">
+                    <strong>Error:</strong> ${message}
+                </div>
+            `;
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 6
+            }).format(num);
+        }
+
+        function formatCurrency(num) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        async function fetchPortfolio() {
+            const address = document.getElementById('addressInput').value.trim();
+
+            if (!address) {
+                showError('Please enter a wallet address');
+                return;
+            }
+
+            if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
+                showError('Invalid Ethereum address format');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/portfolio/${address}`);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to fetch portfolio');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function displayResults(portfolio) {
+            const results = document.getElementById('results');
+            results.className = 'results show';
+
+            let html = `
+                <div class="summary">
+                    <div class="summary-card">
+                        <h3>Total Portfolio Value</h3>
+                        <div class="value">${formatCurrency(portfolio.totalValueUsd)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Chains Tracked</h3>
+                        <div class="value">${portfolio.chains.length}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Wallet Address</h3>
+                        <div class="value" style="font-size: 14px; word-break: break-all;">${portfolio.address}</div>
+                    </div>
+                </div>
+            `;
+
+            // Display each chain
+            portfolio.chains.forEach(chain => {
+                html += `
+                    <div class="chain-section">
+                        <div class="chain-header">
+                            <div class="chain-name">${capitalizeFirst(chain.chain)}</div>
+                            <div class="chain-total">${formatCurrency(chain.totalValueUsd)}</div>
+                        </div>
+                        <div class="token-list">
+                            <div class="token-item">
+                                <div class="token-info">
+                                    <span class="token-symbol">${chain.native.symbol}</span>
+                                    <span class="badge">NATIVE</span>
+                                    <span class="token-balance">${formatNumber(parseFloat(chain.native.formatted))}</span>
+                                </div>
+                                <div class="token-value">${formatCurrency(chain.native.valueUsd)}</div>
+                            </div>
+                `;
+
+                // Display tokens with non-zero balances
+                chain.tokens
+                    .filter(token => parseFloat(token.formatted) > 0)
+                    .forEach(token => {
+                        html += `
+                            <div class="token-item">
+                                <div class="token-info">
+                                    <span class="token-symbol">${token.symbol}</span>
+                                    <span class="token-balance">${formatNumber(parseFloat(token.formatted))}</span>
+                                </div>
+                                <div class="token-value">${formatCurrency(token.valueUsd)}</div>
+                            </div>
+                        `;
+                    });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            results.innerHTML = html;
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('addressInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchPortfolio();
+            }
+        });
+    </script>
+</body>
+</html>
