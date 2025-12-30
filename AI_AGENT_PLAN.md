@@ -14,14 +14,14 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
 
 ## Implementation Phases
 
-### Phase 1: Basic Setup & RPC Connection (Current Status: Scaffolding Complete)
+### Phase 1: Basic Setup & RPC Connection (Current Status: Complete)
 - [x] Initialize Git & Node.js project
 - [x] Install dependencies (express, ethers, pg, dotenv, typescript)
 - [x] Create directory structure
-- [ ] **Task 1.1:** Configure Environment Variables
+- [x] **Task 1.1:** Configure Environment Variables
     - Create `.env.example` with placeholders for `RPC_URL_ETH`, `RPC_URL_POLYGON`, `RPC_URL_ARBITRUM`, `DATABASE_URL`, `COINGECKO_API_KEY`.
     - Setup `src/config/config.ts` to load and validate these.
-- [ ] **Task 1.2:** RPC Provider Setup
+- [x] **Task 1.2:** RPC Provider Setup
     - Create `src/services/blockchain.service.ts`.
     - Implement a class/function to initialize `ethers.JsonRpcProvider` for each chain.
     - Test connection to a public RPC (e.g., Cloudflare or Ankr for testing) in a script.
