@@ -2,6 +2,8 @@ import express from 'express';
 import { config, validateConfig, SupportedChain } from './config/config';
 import { getBlockchainService } from './services/blockchain.service';
 import { getStorageService } from './services/storage.service';
+import { getPriceService } from './services/price.service';
+import { getPortfolioService } from './services/portfolio.service';
 import { initializeDatabase } from './db/database';
 import { isValidAddress } from './utils/validation';
 import { getAllTokenSymbols, getAvailableTokens } from './config/tokens';
@@ -319,6 +321,88 @@ app.get('/api/stored/:address', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch stored balances',
+    });
+  }
+});
+
+// Get current prices for tokens
+app.get('/api/prices', async (req, res) => {
+  try {
+    const priceService = getPriceService();
+    const prices = await priceService.getAllTrackedPrices();
+    res.json({
+      prices,
+      supportedTokens: priceService.getSupportedTokens(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch prices',
+    });
+  }
+});
+
+// Get price for a specific token
+app.get('/api/prices/:symbol', async (req, res) => {
+  const { symbol } = req.params;
+
+  try {
+    const priceService = getPriceService();
+    const price = await priceService.fetchPrice(symbol);
+
+    if (!price) {
+      res.status(404).json({
+        error: `Price not available for ${symbol}`,
+      });
+      return;
+    }
+
+    res.json(price);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch price',
+    });
+  }
+});
+
+// Get portfolio value for an address (single chain)
+app.get('/api/portfolio/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = req.query.chain as SupportedChain | undefined;
+  const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  if (chain && !validChains.includes(chain)) {
+    res.status(400).json({
+      error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    const portfolioService = getPortfolioService();
+
+    if (chain) {
+      const result = await portfolioService.getPortfolioForChain(address, chain);
+      res.json({
+        address,
+        chain,
+        totalValueUsd: result.totalValueUsd,
+        balances: result.balances,
+        lastUpdated: new Date().toISOString(),
+      });
+    } else {
+      const portfolio = await portfolioService.getFullPortfolio(address);
+      res.json(portfolio);
+    }
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch portfolio',
     });
   }
 });

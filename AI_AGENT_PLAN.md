@@ -50,15 +50,15 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
 - [x] **Task 4.2:** Storage Service
     - Create `src/services/storage.service.ts` to save fetched balances.
 
-### Phase 5: Price Feeds & Portfolio Value
-- [ ] **Task 5.1:** CoinGecko Integration
+### Phase 5: Price Feeds & Portfolio Value (Current Status: Complete)
+- [x] **Task 5.1:** CoinGecko Integration
     - Create `src/services/price.service.ts`.
     - Fetch current prices for ETH, MATIC, ARB, and tracked tokens.
-- [ ] **Task 5.2:** Value Calculation
+- [x] **Task 5.2:** Value Calculation
     - Combine Balance * Price to get USD value.
 
 ### Phase 6: API & Frontend
-- [ ] **Task 6.1:** Express API
+- [x] **Task 6.1:** Express API
     - `GET /api/balance/:address?chain=eth`
     - `GET /api/portfolio/:address` (aggregated value)
     - `GET /api/history/:address`
