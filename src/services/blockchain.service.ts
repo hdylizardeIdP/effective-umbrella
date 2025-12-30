@@ -1,6 +1,7 @@
-import { JsonRpcProvider, formatUnits } from 'ethers';
+import { JsonRpcProvider, Contract, formatUnits } from 'ethers';
 import { config, SupportedChain, ChainConfig } from '../config/config';
 import { isValidAddress } from '../utils/validation';
+import { ERC20_ABI, getTokenAddress, getTokenInfo, getAvailableTokens, TokenInfo } from '../config/tokens';
 
 export interface ConnectionStatus {
   chain: SupportedChain;
@@ -15,6 +16,17 @@ export interface NativeBalance {
   balanceWei: string;
   balanceFormatted: string;
   symbol: string;
+  decimals: number;
+}
+
+export interface TokenBalance {
+  address: string;
+  chain: SupportedChain;
+  tokenAddress: string;
+  tokenSymbol: string;
+  tokenName: string;
+  balanceWei: string;
+  balanceFormatted: string;
   decimals: number;
 }
 
@@ -116,6 +128,79 @@ export class BlockchainService {
     return results
       .filter((result): result is PromiseFulfilledResult<NativeBalance> => result.status === 'fulfilled')
       .map((result) => result.value);
+  }
+
+  async getTokenBalance(
+    address: string,
+    tokenAddress: string,
+    chain: SupportedChain
+  ): Promise<TokenBalance> {
+    if (!isValidAddress(address)) {
+      throw new Error(`Invalid wallet address: ${address}`);
+    }
+    if (!isValidAddress(tokenAddress)) {
+      throw new Error(`Invalid token address: ${tokenAddress}`);
+    }
+
+    const provider = this.getProvider(chain);
+    const contract = new Contract(tokenAddress, ERC20_ABI, provider);
+
+    const [balanceWei, decimals, symbol, name] = await Promise.all([
+      contract.balanceOf(address),
+      contract.decimals(),
+      contract.symbol(),
+      contract.name(),
+    ]);
+
+    return {
+      address,
+      chain,
+      tokenAddress,
+      tokenSymbol: symbol,
+      tokenName: name,
+      balanceWei: balanceWei.toString(),
+      balanceFormatted: formatUnits(balanceWei, decimals),
+      decimals: Number(decimals),
+    };
+  }
+
+  async getTokenBalanceBySymbol(
+    address: string,
+    tokenSymbol: string,
+    chain: SupportedChain
+  ): Promise<TokenBalance> {
+    const tokenAddress = getTokenAddress(tokenSymbol, chain);
+    if (!tokenAddress) {
+      throw new Error(`Token ${tokenSymbol} not available on ${chain}`);
+    }
+    return this.getTokenBalance(address, tokenAddress, chain);
+  }
+
+  async getMultipleTokenBalances(
+    address: string,
+    tokenSymbols: string[],
+    chain: SupportedChain
+  ): Promise<TokenBalance[]> {
+    if (!isValidAddress(address)) {
+      throw new Error(`Invalid address: ${address}`);
+    }
+
+    const results = await Promise.allSettled(
+      tokenSymbols.map((symbol) => this.getTokenBalanceBySymbol(address, symbol, chain))
+    );
+
+    return results
+      .filter((result): result is PromiseFulfilledResult<TokenBalance> => result.status === 'fulfilled')
+      .map((result) => result.value);
+  }
+
+  async getAllTokenBalances(
+    address: string,
+    chain: SupportedChain
+  ): Promise<TokenBalance[]> {
+    const availableTokens = getAvailableTokens(chain);
+    const symbols = availableTokens.map((t) => t.symbol);
+    return this.getMultipleTokenBalances(address, symbols, chain);
   }
 }
 

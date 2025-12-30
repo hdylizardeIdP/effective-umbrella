@@ -34,13 +34,13 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
     - Add method to `BlockchainService`: `getNativeBalance(address: string, chain: string): Promise<bigint>`.
     - Handle errors and different chain IDs.
 
-### Phase 3: ERC-20 Token Integration
-- [ ] **Task 3.1:** Token Configuration
+### Phase 3: ERC-20 Token Integration (Current Status: Complete)
+- [x] **Task 3.1:** Token Configuration
     - Create a config file (e.g., `src/config/tokens.ts`) mapping popular Token Symbols -> Contract Addresses per chain.
-- [ ] **Task 3.2:** ERC-20 Balance Fetching
+- [x] **Task 3.2:** ERC-20 Balance Fetching
     - Add `getTokenBalance(address: string, tokenAddress: string, chain: string)` to `BlockchainService`.
     - Use a minimal ERC-20 ABI (balanceOf, decimals, symbol).
-- [ ] **Task 3.3:** Batch Queries (Optimization)
+- [x] **Task 3.3:** Batch Queries (Optimization)
     - Implement `Promise.all` or `Multicall` (if using a multicall library) to fetch multiple token balances efficiently.
 
 ### Phase 4: Database & History

@@ -2,6 +2,7 @@ import express from 'express';
 import { config, validateConfig, SupportedChain } from './config/config';
 import { getBlockchainService } from './services/blockchain.service';
 import { isValidAddress } from './utils/validation';
+import { getAllTokenSymbols, getAvailableTokens } from './config/tokens';
 
 const app = express();
 
@@ -123,6 +124,91 @@ app.get('/api/balance/:address/all', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Failed to fetch balances',
+    });
+  }
+});
+
+// Get list of supported tokens
+app.get('/api/tokens', (req, res) => {
+  const chain = req.query.chain as SupportedChain | undefined;
+
+  if (chain) {
+    const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+    if (!validChains.includes(chain)) {
+      res.status(400).json({
+        error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+      });
+      return;
+    }
+    const tokens = getAvailableTokens(chain);
+    res.json({ chain, tokens });
+  } else {
+    res.json({ tokens: getAllTokenSymbols() });
+  }
+});
+
+// Get token balance for an address
+app.get('/api/token/:address/:symbol', async (req, res) => {
+  const { address, symbol } = req.params;
+  const chain = (req.query.chain as SupportedChain) || 'ethereum';
+  const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  if (!validChains.includes(chain)) {
+    res.status(400).json({
+      error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    const blockchainService = getBlockchainService();
+    const balance = await blockchainService.getTokenBalanceBySymbol(address, symbol, chain);
+    res.json(balance);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch token balance',
+    });
+  }
+});
+
+// Get all token balances for an address on a specific chain
+app.get('/api/tokens/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = (req.query.chain as SupportedChain) || 'ethereum';
+  const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  if (!validChains.includes(chain)) {
+    res.status(400).json({
+      error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    const blockchainService = getBlockchainService();
+    const balances = await blockchainService.getAllTokenBalances(address, chain);
+    res.json({
+      address,
+      chain,
+      tokens: balances,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch token balances',
     });
   }
 });
