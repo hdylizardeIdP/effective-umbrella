@@ -1,11 +1,21 @@
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, formatUnits } from 'ethers';
 import { config, SupportedChain, ChainConfig } from '../config/config';
+import { isValidAddress } from '../utils/validation';
 
 export interface ConnectionStatus {
   chain: SupportedChain;
   connected: boolean;
   blockNumber?: number;
   error?: string;
+}
+
+export interface NativeBalance {
+  address: string;
+  chain: SupportedChain;
+  balanceWei: string;
+  balanceFormatted: string;
+  symbol: string;
+  decimals: number;
 }
 
 export class BlockchainService {
@@ -72,6 +82,40 @@ export class BlockchainService {
       chains.map((chain) => this.testConnection(chain))
     );
     return results;
+  }
+
+  async getNativeBalance(address: string, chain: SupportedChain): Promise<NativeBalance> {
+    if (!isValidAddress(address)) {
+      throw new Error(`Invalid address: ${address}`);
+    }
+
+    const provider = this.getProvider(chain);
+    const chainConfig = this.getChainConfig(chain);
+    const balanceWei = await provider.getBalance(address);
+
+    return {
+      address,
+      chain,
+      balanceWei: balanceWei.toString(),
+      balanceFormatted: formatUnits(balanceWei, chainConfig.nativeCurrency.decimals),
+      symbol: chainConfig.nativeCurrency.symbol,
+      decimals: chainConfig.nativeCurrency.decimals,
+    };
+  }
+
+  async getNativeBalanceAllChains(address: string): Promise<NativeBalance[]> {
+    if (!isValidAddress(address)) {
+      throw new Error(`Invalid address: ${address}`);
+    }
+
+    const chains = this.getSupportedChains();
+    const results = await Promise.allSettled(
+      chains.map((chain) => this.getNativeBalance(address, chain))
+    );
+
+    return results
+      .filter((result): result is PromiseFulfilledResult<NativeBalance> => result.status === 'fulfilled')
+      .map((result) => result.value);
   }
 }
 

@@ -26,11 +26,11 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
     - Implement a class/function to initialize `ethers.JsonRpcProvider` for each chain.
     - Test connection to a public RPC (e.g., Cloudflare or Ankr for testing) in a script.
 
-### Phase 2: Address Validation & Basic Balance
-- [ ] **Task 2.1:** Address Validation
+### Phase 2: Address Validation & Basic Balance (Current Status: Complete)
+- [x] **Task 2.1:** Address Validation
     - Create `src/utils/validation.ts`.
     - Implement `isValidAddress(address: string): boolean` using `ethers.isAddress`.
-- [ ] **Task 2.2:** Native Balance Fetching
+- [x] **Task 2.2:** Native Balance Fetching
     - Add method to `BlockchainService`: `getNativeBalance(address: string, chain: string): Promise<bigint>`.
     - Handle errors and different chain IDs.
 

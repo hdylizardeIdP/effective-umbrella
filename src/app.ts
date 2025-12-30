@@ -1,6 +1,7 @@
 import express from 'express';
-import { config, validateConfig } from './config/config';
+import { config, validateConfig, SupportedChain } from './config/config';
 import { getBlockchainService } from './services/blockchain.service';
+import { isValidAddress } from './utils/validation';
 
 const app = express();
 
@@ -66,6 +67,62 @@ app.get('/health/rpc/:chain', async (req, res) => {
       chain,
       connected: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Get native balance for an address on a specific chain
+app.get('/api/balance/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = (req.query.chain as SupportedChain) || 'ethereum';
+  const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  if (!validChains.includes(chain)) {
+    res.status(400).json({
+      error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    const blockchainService = getBlockchainService();
+    const balance = await blockchainService.getNativeBalance(address, chain);
+    res.json(balance);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch balance',
+    });
+  }
+});
+
+// Get native balance for an address across all chains
+app.get('/api/balance/:address/all', async (req, res) => {
+  const { address } = req.params;
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  try {
+    const blockchainService = getBlockchainService();
+    const balances = await blockchainService.getNativeBalanceAllChains(address);
+    res.json({
+      address,
+      balances,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch balances',
     });
   }
 });
