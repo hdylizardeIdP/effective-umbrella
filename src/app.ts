@@ -1,6 +1,8 @@
 import express from 'express';
 import { config, validateConfig, SupportedChain } from './config/config';
 import { getBlockchainService } from './services/blockchain.service';
+import { getStorageService } from './services/storage.service';
+import { initializeDatabase } from './db/database';
 import { isValidAddress } from './utils/validation';
 import { getAllTokenSymbols, getAvailableTokens } from './config/tokens';
 
@@ -213,7 +215,132 @@ app.get('/api/tokens/:address', async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
-  console.log(`Server is running on port ${config.port}`);
-  console.log('Supported chains:', Object.keys(config.chains).join(', '));
+// Get balance history for an address
+app.get('/api/history/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = req.query.chain as SupportedChain | undefined;
+  const tokenSymbol = req.query.token as string | undefined;
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
+  const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  try {
+    const storageService = getStorageService();
+    const history = await storageService.getBalanceHistory(address, {
+      chain,
+      tokenSymbol,
+      limit,
+      offset,
+    });
+    res.json({
+      address,
+      history,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch history',
+    });
+  }
 });
+
+// Save current balances snapshot for an address
+app.post('/api/snapshot/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = (req.query.chain as SupportedChain) || 'ethereum';
+  const validChains: SupportedChain[] = ['ethereum', 'polygon', 'arbitrum'];
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  if (!validChains.includes(chain)) {
+    res.status(400).json({
+      error: `Invalid chain. Supported chains: ${validChains.join(', ')}`,
+    });
+    return;
+  }
+
+  try {
+    const blockchainService = getBlockchainService();
+    const storageService = getStorageService();
+
+    // Fetch current balances
+    const nativeBalance = await blockchainService.getNativeBalance(address, chain);
+    const tokenBalances = await blockchainService.getAllTokenBalances(address, chain);
+
+    // Save to database
+    await storageService.saveNativeBalance(nativeBalance);
+    for (const tokenBalance of tokenBalances) {
+      await storageService.saveTokenBalance(tokenBalance);
+    }
+
+    res.json({
+      message: 'Snapshot saved successfully',
+      address,
+      chain,
+      nativeBalance,
+      tokenBalances,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to save snapshot',
+    });
+  }
+});
+
+// Get latest stored balances for an address
+app.get('/api/stored/:address', async (req, res) => {
+  const { address } = req.params;
+  const chain = req.query.chain as SupportedChain | undefined;
+
+  if (!isValidAddress(address)) {
+    res.status(400).json({
+      error: 'Invalid Ethereum address',
+    });
+    return;
+  }
+
+  try {
+    const storageService = getStorageService();
+    const balances = await storageService.getLatestBalances(address, chain);
+    res.json({
+      address,
+      balances,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to fetch stored balances',
+    });
+  }
+});
+
+async function startServer() {
+  // Initialize database if configured
+  if (config.databaseUrl) {
+    try {
+      await initializeDatabase();
+      console.log('Database connected and initialized');
+    } catch (error) {
+      console.warn('Database initialization failed:', error instanceof Error ? error.message : error);
+      console.warn('Running without database support');
+    }
+  } else {
+    console.log('No DATABASE_URL configured - running without database support');
+  }
+
+  app.listen(config.port, () => {
+    console.log(`Server is running on port ${config.port}`);
+    console.log('Supported chains:', Object.keys(config.chains).join(', '));
+  });
+}
+
+startServer();

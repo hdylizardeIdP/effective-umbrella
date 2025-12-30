@@ -43,11 +43,11 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
 - [x] **Task 3.3:** Batch Queries (Optimization)
     - Implement `Promise.all` or `Multicall` (if using a multicall library) to fetch multiple token balances efficiently.
 
-### Phase 4: Database & History
-- [ ] **Task 4.1:** Database Schema
+### Phase 4: Database & History (Current Status: Complete)
+- [x] **Task 4.1:** Database Schema
     - Design schema: `wallets`, `balances` (wallet_id, token_address, chain, amount, timestamp), `prices`.
     - Create migration scripts (or use an ORM like TypeORM/Prisma if desired, currently raw `pg` is installed).
-- [ ] **Task 4.2:** Storage Service
+- [x] **Task 4.2:** Storage Service
     - Create `src/services/storage.service.ts` to save fetched balances.
 
 ### Phase 5: Price Feeds & Portfolio Value
