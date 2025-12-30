@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import { config, validateConfig, SupportedChain } from './config/config';
 import { getBlockchainService } from './services/blockchain.service';
 import { getStorageService } from './services/storage.service';
@@ -11,9 +12,15 @@ import { getAllTokenSymbols, getAvailableTokens } from './config/tokens';
 const app = express();
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Health check endpoint
+// Serve dashboard at root
 app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// API health check endpoint
+app.get('/api/health', (req, res) => {
   res.json({
     status: 'running',
     service: 'Wallet Balance Tracker API',

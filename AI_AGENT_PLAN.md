@@ -57,12 +57,12 @@ Based on the "Wallet Balance Tracker" project from `crypto_coding_projects_guide
 - [x] **Task 5.2:** Value Calculation
     - Combine Balance * Price to get USD value.
 
-### Phase 6: API & Frontend
+### Phase 6: API & Frontend (Current Status: Complete)
 - [x] **Task 6.1:** Express API
     - `GET /api/balance/:address?chain=eth`
     - `GET /api/portfolio/:address` (aggregated value)
     - `GET /api/history/:address`
-- [ ] **Task 6.2:** Simple Dashboard
+- [x] **Task 6.2:** Simple Dashboard
     - Create a basic HTML/JS frontend in `public/` or a separate React app to consume the API.
 
 ## Instructions for AI Agent
